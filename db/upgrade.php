@@ -35,9 +35,11 @@ require_once(__DIR__ . "/../lib.php");
 function xmldb_local_webhooks_upgrade($oldversion) {
     global $DB;
 
-    $dbman = $DB->get_manager();
     $version = 2026031500;
-
+    if ($oldversion >= $version) {
+        return true;
+    }
+    $dbman = $DB->get_manager();
     if ($oldversion < $version) {
         $table = new xmldb_table('local_webhooks_service');
         $field = new xmldb_field('token');
