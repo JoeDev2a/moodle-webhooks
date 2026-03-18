@@ -33,19 +33,17 @@ require_once(__DIR__ . "/../lib.php");
  * @return boolean
  */
 function xmldb_local_webhooks_upgrade($oldversion) {
-    global $CFG, $DB;
+    global $DB;
 
-    /* Update from version 3.0.0 */
-    if ($oldversion < 2017112600) {
-        $rs = $DB->get_recordset("local_webhooks_service", null, "id", "*", 0, 0);
-        foreach ($rs as $record) {
-            if (!empty($record->events)) {
-                $record->events = unserialize(gzuncompress(base64_decode($record->events)));
-                local_webhooks_update_record($record);
-            }
-        }
-        $rs->close();
-        upgrade_plugin_savepoint(true, 2017112600, "local", "webhooks");
+    $dbman = $DB->get_manager();
+    $version = 2026031500;
+
+    if ($oldversion < $version) {
+        $table = new xmldb_table('local_webhooks_service');
+        $field = new xmldb_field('token');
+        $field->set_attributes(XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $dbman->change_field_type($table, $field);
+        upgrade_plugin_savepoint(true, $version, 'local', 'webhooks');
     }
 
     return true;

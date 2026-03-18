@@ -8,7 +8,7 @@
                 <FIELD NAME="title" TYPE="text" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="url" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="type" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" />
-                <FIELD NAME="token" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="token" TYPE="text" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="events" TYPE="text" NOTNULL="false" SEQUENCE="false" />
                 <FIELD NAME="other" TYPE="text" NOTNULL="false" SEQUENCE="false" />
             </FIELDS>
