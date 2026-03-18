@@ -27,8 +27,9 @@ defined("MOODLE_INTERNAL") || die();
 /**
  * Get data from the cache by key.
  *
- * @param  string $eventname
+ * @param string $eventname
  * @return array
+ * @throws coding_exception
  */
 function local_webhooks_cache_get($eventname) {
     $cache = cache::make("local_webhooks", "webhooks_services");
@@ -115,7 +116,11 @@ class local_webhooks_events {
     public static function backup_performed() {
         $context = context_system::instance();
         $event   = local_webhooks\event\backup_performed::create(array("context" => $context, "objectid" => 0));
-        $event->trigger();
+        try {
+            $event->trigger();
+        } catch (coding_exception $e) {
+            throw new moodle_exception('error', 'local_webhooks', '', $e->getMessage());
+        }
     }
 
     /**
@@ -124,7 +129,11 @@ class local_webhooks_events {
     public static function backup_restored() {
         $context = context_system::instance();
         $event   = local_webhooks\event\backup_restored::create(array("context" => $context, "objectid" => 0));
-        $event->trigger();
+        try {
+            $event->trigger();
+        } catch (coding_exception $e) {
+            throw new moodle_exception('error', 'local_webhooks', '', $e->getMessage());
+        }
     }
 
     /**
@@ -142,7 +151,11 @@ class local_webhooks_events {
         }
 
         $event = local_webhooks\event\response_answer::create(array("context" => $context, "objectid" => $objectid, "other" => array("status" => $status)));
-        $event->trigger();
+        try {
+            $event->trigger();
+        } catch (coding_exception $e) {
+            throw new moodle_exception('error', 'local_webhooks', '', $e->getMessage());
+        }
     }
 
     /**
@@ -153,7 +166,11 @@ class local_webhooks_events {
     public static function service_added($objectid = 0) {
         $context = context_system::instance();
         $event   = local_webhooks\event\service_added::create(array("context" => $context, "objectid" => $objectid));
-        $event->trigger();
+        try {
+            $event->trigger();
+        } catch (coding_exception $e) {
+            throw new moodle_exception('error', 'local_webhooks', '', $e->getMessage());
+        }
     }
 
     /**
@@ -164,7 +181,11 @@ class local_webhooks_events {
     public static function service_deleted($objectid = 0) {
         $context = context_system::instance();
         $event   = local_webhooks\event\service_deleted::create(array("context" => $context, "objectid" => $objectid));
-        $event->trigger();
+        try {
+            $event->trigger();
+        } catch (coding_exception $e) {
+            throw new moodle_exception('error', 'local_webhooks', '', $e->getMessage());
+        }
     }
 
     /**
@@ -173,7 +194,11 @@ class local_webhooks_events {
     public static function service_deletedall() {
         $context = context_system::instance();
         $event   = local_webhooks\event\service_deletedall::create(array("context" => $context, "objectid" => 0));
-        $event->trigger();
+        try {
+            $event->trigger();
+        } catch (coding_exception $e) {
+            throw new moodle_exception('error', 'local_webhooks', '', $e->getMessage());
+        }
     }
 
     /**
@@ -184,6 +209,10 @@ class local_webhooks_events {
     public static function service_updated($objectid = 0) {
         $context = context_system::instance();
         $event   = local_webhooks\event\service_updated::create(array("context" => $context, "objectid" => $objectid));
-        $event->trigger();
+        try {
+            $event->trigger();
+        } catch (coding_exception $e) {
+            throw new moodle_exception('error', 'local_webhooks', '', $e->getMessage());
+        }
     }
 }

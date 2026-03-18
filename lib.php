@@ -80,7 +80,11 @@ function local_webhooks_search_services_by_event($eventname, $active = false) {
 function local_webhooks_get_record($serviceid) {
     global $DB;
 
-    $servicerecord = $DB->get_record("local_webhooks_service", array("id" => $serviceid), "*", MUST_EXIST);
+    try {
+        $servicerecord = $DB->get_record("local_webhooks_service", array("id" => $serviceid), "*", MUST_EXIST);
+    } catch (dml_exception $e) {
+        throw new moodle_exception('error', 'local_webhooks', '', null, $e->getMessage());
+    }
 
     if (!empty($servicerecord->events)) {
         $servicerecord->events = local_webhooks_deserialization_data($servicerecord->events);
@@ -99,7 +103,11 @@ function local_webhooks_get_record($serviceid) {
 function local_webhooks_get_list_records($limitfrom = 0, $limitnum = 0) {
     global $DB;
 
-    $listrecords = $DB->get_records("local_webhooks_service", null, "id", "*", $limitfrom, $limitnum);
+    try {
+        $listrecords = $DB->get_records("local_webhooks_service", null, "id", "*", $limitfrom, $limitnum);
+    } catch (dml_exception $e) {
+        throw new moodle_exception('error_getting_records', 'local_webhooks');
+    }
 
     foreach ($listrecords as $servicerecord) {
         if (!empty($servicerecord->events)) {
@@ -132,7 +140,11 @@ function local_webhooks_create_record($record) {
         $record->events = local_webhooks_serialization_data($record->events);
     }
 
-    $result = $DB->insert_record("local_webhooks_service", $record, true, false);
+    try {
+        $result = $DB->insert_record("local_webhooks_service", $record, true, false);
+    } catch (dml_exception $e) {
+        throw new moodle_exception('error', 'local_webhooks', '', null, $e->getMessage());
+    }
 
     /* Clear the plugin cache */
     local_webhooks_cache_reset();
@@ -153,11 +165,15 @@ function local_webhooks_update_record($record) {
     global $DB;
 
     if (empty($record->id)) {
-        print_error("missingparam", "error", null, "id");
+        throw new moodle_exception("missingparam", "error", null, "id");
     }
 
     $record->events = !empty($record->events) ? local_webhooks_serialization_data($record->events) : null;
-    $result = $DB->update_record("local_webhooks_service", $record, false);
+    try {
+        $result = $DB->update_record("local_webhooks_service", $record, false);
+    } catch (dml_exception $e) {
+        throw new moodle_exception("dberror", "error", null, $e->getMessage());
+    }
 
     /* Clear the plugin cache */
     local_webhooks_cache_reset();
@@ -165,7 +181,7 @@ function local_webhooks_update_record($record) {
     /* Event notification */
     local_webhooks_events::service_updated($record->id);
 
-    return boolval($result);
+    return $result;
 }
 
 /**
@@ -177,7 +193,11 @@ function local_webhooks_update_record($record) {
 function local_webhooks_delete_record($serviceid) {
     global $DB;
 
-    $result = $DB->delete_records("local_webhooks_service", array("id" => $serviceid));
+    try {
+        $result = $DB->delete_records("local_webhooks_service", array("id" => $serviceid));
+    } catch (dml_exception $e) {
+        throw new moodle_exception("Error deleting record", "local_webhooks", "", null, $e);
+    }
 
     /* Clear the plugin cache */
     local_webhooks_cache_reset();
@@ -185,7 +205,7 @@ function local_webhooks_delete_record($serviceid) {
     /* Event notification */
     local_webhooks_events::service_deleted($serviceid);
 
-    return boolval($result);
+    return $result;
 }
 
 /**
@@ -196,7 +216,11 @@ function local_webhooks_delete_record($serviceid) {
 function local_webhooks_delete_all_records() {
     global $DB;
 
-    $result = $DB->delete_records("local_webhooks_service", null);
+    try {
+        $result = $DB->delete_records("local_webhooks_service", null);
+    } catch (dml_exception $e) {
+        throw new moodle_exception('error', 'local_webhooks', '', null, $e->getMessage());
+    }
 
     /* Clear the plugin cache */
     local_webhooks_cache_reset();
@@ -204,7 +228,7 @@ function local_webhooks_delete_all_records() {
     /* Event notification */
     local_webhooks_events::service_deletedall();
 
-    return boolval($result);
+    return $result;
 }
 
 /**
@@ -213,7 +237,11 @@ function local_webhooks_delete_all_records() {
  * @return string
  */
 function local_webhooks_create_backup() {
-    $listrecords = local_webhooks_get_list_records();
+    try {
+        $listrecords = local_webhooks_get_list_records();
+    } catch (moodle_exception $e) {
+        throw $e;
+    }
     $result      = local_webhooks_serialization_data($listrecords);
 
     /* Event notification */
@@ -230,13 +258,21 @@ function local_webhooks_create_backup() {
 function local_webhooks_restore_backup($data, $deleterecords = false) {
     $listrecords = local_webhooks_deserialization_data($data);
 
-    if (boolval($deleterecords)) {
-        local_webhooks_delete_all_records();
+    if ($deleterecords) {
+        try {
+            local_webhooks_delete_all_records();
+        } catch (moodle_exception $e) {
+            throw new moodle_exception('errordeletingrecords', 'local_webhooks');
+        }
     }
 
-    foreach ($listrecords as $servicerecord) {
-        local_webhooks_create_record($servicerecord);
-    }
+        try {
+            foreach ($listrecords as $servicerecord) {
+                local_webhooks_create_record($servicerecord);
+            }
+        } catch (moodle_exception $e) {
+            throw new moodle_exception('errorcreatingrecord', 'local_webhooks');
+        }
 
     /* Event notification */
     local_webhooks_events::backup_restored();
