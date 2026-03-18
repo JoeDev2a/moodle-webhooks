@@ -36,6 +36,74 @@ require_once($CFG->libdir . "/formslib.php");
  */
 class service_edit_form extends moodleform {
     /**
+     * Map of generated form field names to the original event names.
+     *
+     * @var array
+     */
+    protected $eventmap = array();
+
+    /**
+     * Convert the event name into a safe form field name.
+     *
+     * @param string $eventname
+     * @return string
+     */
+    protected function normalise_event_field_name($eventname)
+    {
+        return preg_replace('/[^a-z0-9_]/i', '_', $eventname);
+    }
+
+    /**
+     * Prepare stored events so that they match the generated form field names.
+     *
+     * @param array|object|string $events
+     * @return array
+     */
+    protected function prepare_events_for_form($events)
+    {
+        if (empty($events)) {
+            return array();
+        }
+
+        if (!is_array($events)) {
+            $events = (array)$events;
+        }
+
+        $prepared = array();
+
+        foreach ($events as $eventname => $value) {
+            $fieldname = $this->normalise_event_field_name($eventname);
+            $prepared[$fieldname] = (int)!empty($value);
+        }
+
+        return $prepared;
+    }
+
+    /**
+     * Convert submitted form values back into original event names.
+     *
+     * @param array $events
+     * @return array
+     */
+    protected function prepare_events_from_form(array $events)
+    {
+        $prepared = array();
+
+        foreach ($events as $fieldname => $value) {
+            if (empty($value)) {
+                continue;
+            }
+
+            if (!empty($this->eventmap[$fieldname])) {
+                $prepared[$this->eventmap[$fieldname]] = (int)!empty($value);
+            }
+        }
+
+        return $prepared;
+    }
+
+
+    /**
      * @param string $baseurl
      */
     public function __construct($baseurl) {
@@ -91,7 +159,9 @@ class service_edit_form extends moodleform {
 
         /* Formation of the list of elements */
         foreach ($eventlist as $event) {
-            $events[$event["component"]][] =& $mform->createElement("checkbox", $event["eventname"], $event["eventname"]);
+            $fieldname = $this->normalise_event_field_name($event["eventname"]);
+            $this->eventmap[$fieldname] = $event["eventname"];
+            $events[$event["component"]][] =& $mform->createElement("checkbox", $fieldname, $event["eventname"]);
         }
 
         /* Displays groups of items */
@@ -101,6 +171,43 @@ class service_edit_form extends moodleform {
 
         /* Control Panel */
         $this->add_action_buttons(true);
+    }
+
+    /**
+     * Ensure stored data is compatible with the generated form fields.
+     *
+     * @param stdClass|array $defaultvalues
+     */
+    public function set_data($defaultvalues)
+    {
+        if (!empty($defaultvalues)) {
+            if (is_object($defaultvalues) && !empty($defaultvalues->events)) {
+                $defaultvalues = clone($defaultvalues);
+                $defaultvalues->events = $this->prepare_events_for_form($defaultvalues->events);
+            } else if (is_array($defaultvalues) && !empty($defaultvalues['events'])) {
+                $defaultvalues['events'] = $this->prepare_events_for_form($defaultvalues['events']);
+            }
+        }
+
+        parent::set_data($defaultvalues);
+    }
+
+    /**
+     * Convert submitted form data back to original event names.
+     *
+     * @return stdClass|false
+     */
+    public function get_data()
+    {
+        $data = parent::get_data();
+
+        if ($data === false || !is_object($data)) {
+            return $data;
+        }
+
+        $data->events = !empty($data->events) ? $this->prepare_events_from_form((array)$data->events) : array();
+
+        return $data;
     }
 }
 
