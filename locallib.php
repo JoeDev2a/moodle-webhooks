@@ -85,7 +85,21 @@ function local_webhooks_serialization_data($data) {
  * @return array|object
  */
 function local_webhooks_deserialization_data($data) {
-    return unserialize($data);
+    if (empty($data)) {
+        return array();
+    }
+
+    if (is_array($data) || is_object($data)) {
+        return $data;
+    }
+
+    $result = @unserialize($data);
+
+    if ($result === false && $data !== serialize(false)) {
+        return array();
+    }
+
+    return $result;
 }
 
 /**
